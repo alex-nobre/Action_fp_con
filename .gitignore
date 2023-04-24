@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 Analysis/Plots
+.Rdata
+.httr-oauth
+.DS_Store
