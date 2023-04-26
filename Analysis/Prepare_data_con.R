@@ -16,10 +16,10 @@ library(dplyr)
 graphical_defaults <- par()
 options_defaults <- options() 
 
-source("G:/My Drive/Post-doc/Orientacoes/Sabrícia//Analysis/helper_functions.R")
+source("./Analysis/helper_functions.R")
 
 # Read data
-data <- read_csv("G:/My Drive/Post-doc/Orientacoes/Sabrícia/Analysis/dataActionFPAll.csv")
+data <- read_csv("./Analysis/dataActionFPAll.csv")
 
 # Remove unnecessary columns
 data <- data %>%
@@ -112,3 +112,9 @@ summaryData2 <- data2 %>%
             meanInvRT = mean(invRT)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
+
+#write_csv(data, "./Analysis/data.csv")
+#write_csv(data2, "./Analysis/data2.csv")
+#write_csv(summaryData, "./Analysis/summaryData.csv")
+#write_csv(summaryData2, "./Analysis/summaryData2.csv")
+

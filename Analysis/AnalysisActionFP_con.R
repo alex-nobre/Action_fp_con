@@ -20,8 +20,6 @@ library(codingMatrices)
 library(performance)
 library(modelr)
 
-setwd('G:/My Drive/Post-doc/Orientacoes/Sabrícia/')
-
 # Load data
 source('./Analysis/Prepare_data_con.R')
 
@@ -29,7 +27,7 @@ source('./Analysis/Prepare_data_con.R')
 #======================================= 0. Data quality ===================================
 #==========================================================================================#
 # 1.1.1. RTs across blocks (conditions aggregated)
-ggplot(data=summaryData,
+ggplot(data=summaryData2,
        aes(x=block,
            y=meanRT))+
   stat_summary(fun='mean',geom='point')+
