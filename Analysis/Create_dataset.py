@@ -12,9 +12,9 @@ import pandas as pd
 import glob
 import os
 
-os.chdir('E:/Post-doc_data/Sync/Experimento_action_con/Pavlovia/')
+#os.chdir('E:/Sync/Experimento_action_con/Pavlovia/')
 
-FileList=glob.glob('./*.csv')
+FileList=glob.glob('./Data/*.csv')
 FileList.sort()
 
 nFiles=int(len(FileList))
@@ -57,4 +57,4 @@ for iFile,FileName in enumerate(FileList):
        
     dataActionFPAll=pd.concat([dataActionFPAll, dataActionFP], axis=0)    
 
-dataActionFPAll.to_csv('G:/My Drive/Post-doc/Orientacoes/Sabrícia/Analysis/'+'dataActionFPAll.csv')
+dataActionFPAll.to_csv('./Analysis/'+'dataActionFPAll.csv')

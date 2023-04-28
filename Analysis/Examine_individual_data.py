@@ -9,10 +9,11 @@ import pandas as pd
 import os
 import seaborn as sns
 
-os.chdir('E:/Post-doc_data/Sync/Experimento_action_con/Pavlovia/')
+#os.chdir('E:/Sync/Experimento_action_con/Pavlovia/')
 
 
 subFileName = input('Enter File Name:\n')
+subFileName = './Data/' + subFileName
 # if len(subnumber) < 2:
 #     subFileName = '00' + str(subnumber) + '_action_fp_gabor_disc_2022-04-29_11h39.23.149.csv'
 # else:
