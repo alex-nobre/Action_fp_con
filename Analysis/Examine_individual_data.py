@@ -63,4 +63,3 @@ summaryData=subData.groupby(['foreperiod','condition','oneBackFP','prevOri','blo
 summaryPlot=sns.pointplot(x="foreperiod", y="RT",
                           data=summaryData)
 
-
