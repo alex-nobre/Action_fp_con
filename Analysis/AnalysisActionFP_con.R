@@ -140,7 +140,7 @@ meandata <- summaryData2 %>%
   summarise(condRT = mean(meanRT),
             varRT = var(meanRT),
             sdRT = sd(meanRT))
-  
+meandata  
 
 #==========================================================================================#
 #==================================== 2. Basic models ======================================
@@ -331,9 +331,9 @@ Anova(ntworegression, type = "II")
 ggplot(data = summaryData2,
        aes(x = foreperiod,
            y = meanRT,
-           color=oneBackFP)) +
+           color=prevOri)) +
   stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", size = 0.8, aes(group = oneBackFP)) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = prevOri)) +
   stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),

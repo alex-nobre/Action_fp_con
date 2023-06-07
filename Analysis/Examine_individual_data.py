@@ -9,18 +9,11 @@ import pandas as pd
 import os
 import seaborn as sns
 
-#os.chdir('E:/Sync/Experimento_action_con/Pavlovia/')
-
-
 subFileName = input('Enter File Name:\n')
-subFileName = './Data/' + subFileName
-# if len(subnumber) < 2:
-#     subFileName = '00' + str(subnumber) + '_action_fp_gabor_disc_2022-04-29_11h39.23.149.csv'
-# else:
-#     subFileName = '00' + str(subnumber) + '_action_fp_gabor_disc_2022-04-29_11h39.23.149.csv'
+subFile = './Data/' + subFileName
 
 # Read 
-subData = pd.read_csv(subFileName)
+subData = pd.read_csv(subFile)
 
 # Remove unnecessary columns
 subData = subData[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration']]
@@ -69,5 +62,4 @@ summaryData=subData.groupby(['foreperiod','condition','oneBackFP','prevOri','blo
 
 summaryPlot=sns.pointplot(x="foreperiod", y="RT",
                           data=summaryData)
-
 
