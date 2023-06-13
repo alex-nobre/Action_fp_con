@@ -7,3 +7,6 @@ Analysis/Plots
 .httr-oauth
 .DS_Store
 Data
+Modeling/fMTP/Fitting/__pycache__/hazard.cpython-38.pyc
+Modeling/fMTP/Fitting/__pycache__/fmtp.cpython-38.pyc
+Modeling/fMTP/Fitting/__pycache__/fit.cpython-38.pyc

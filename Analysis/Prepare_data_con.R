@@ -47,22 +47,42 @@ data$counterbalance <- as.factor(data$counterbalance)
 data <- data %>%
   filter(condition != 'practice')
 
-# Create column for previous orientation
+# Add trial number across the whole experiment and by block
 data <- data %>%
-  mutate(prevOri = ifelse(lag(orientation)==orientation, 'same', 'different'))
+  group_by(ID) %>%
+  mutate(trial = seq(n())) %>%
+  ungroup() %>%
+  group_by(ID, block) %>%
+  mutate(trial_bl = seq(n())) %>%
+  ungroup()
+
+# Create column for previous orientation and for comparison of current and previous orientations
+data <- data %>%
+  mutate(seqOri = ifelse(lag(orientation)==orientation, 'same', 'different'),
+         prevOri = lag(orientation)) %>%
+  mutate(seqOri = as.factor(seqOri),
+         prevOri = as.factor(prevOri))
 
 # Save data with error trials to assess accuracy
 dataAll <- data
 
-# Keep only go trials with correct responses to analyze RT
+# Keep only trials with correct responses to analyze RT
 data <- data %>%
   filter(!is.na(RT), Acc == 1)
 
-# Coerce foreperiod and FP n-1 back to numeric
+# Coerce foreperiod aback to numeric
 data$numForeperiod <- as.numeric(as.character(data$foreperiod))
+dataAll$numForeperiod <- as.numeric(as.character(dataAll$foreperiod))
 
-# Create log2 of continuous independent variables
-data$logFP <- log2(data$numForeperiod)
+# Create log10 of continuous independent variables
+data$numLogFP <- log10(data$numForeperiod)
+data$logFP <- as.factor(data$numLogFP)
+
+dataAll$numLogFP <- log10(dataAll$numForeperiod)
+dataAll$logFP <- as.factor(dataAll$numLogFP)
+
+# Factor version of accuracy
+dataAll$acc_result <- as.factor(dataAll$Acc)
 
 # Remove extreme values
 data <- data %>%
@@ -93,7 +113,7 @@ data <- data %>%
 # Average data
 summaryData <- data %>%
   group_by(ID,foreperiod,condition,
-           orientation,prevOri,
+           orientation,seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
             meanLogRT = mean(logRT),
@@ -104,7 +124,7 @@ summaryData <- data %>%
 
 summaryData2 <- data2 %>%
   group_by(ID,foreperiod,condition,
-           orientation,prevOri,
+           orientation, seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
             meanLogRT = mean(logRT),
@@ -112,6 +132,15 @@ summaryData2 <- data2 %>%
             meanInvRT = mean(invRT)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
+
+summaryDataAll <- dataAll %>%
+  group_by(ID, foreperiod, condition) %>%
+  summarise(meanAcc = mean(Acc)) %>%
+  ungroup() %>%
+  mutate(numForeperiod = as.numeric(as.character(foreperiod))) %>%
+  mutate(squaredNumForeperiod = numForeperiod^2,
+         scaledNumForeperiod = scale(numForeperiod)[,1],
+         squaredScaledNumForeperiod = scaledNumForeperiod^2)
 
 #write_csv(data, "./Analysis/data.csv")
 #write_csv(data2, "./Analysis/data2.csv")
