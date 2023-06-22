@@ -223,8 +223,8 @@ isSingular(with_condition)
 
 formula(with_condition)
 
-with_condition <- mixed(formula = RT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                          (1 + condition + numForeperiod || ID),
+with_condition <- mixed(formula = RT ~ 1 + condition + foreperiod + condition:foreperiod + 
+                          (1 + condition + foreperiod | ID),
                         data = data2,
                         control = lmerControl(optimizer = c('bobyqa'), optCtrl = list(maxfun=2e5), calc.derivs = FALSE),
                         progress = TRUE,
@@ -235,8 +235,8 @@ with_condition <- mixed(formula = RT ~ 1 + condition + numForeperiod + condition
 
 isSingular(with_condition)
 
-no_condition <- mixed(formula = RT ~ 1 + condition + numForeperiod + condition:numForeperiod + 
-                        (1 + condition + numForeperiod || ID),
+no_condition <- mixed(formula = RT ~ 1 + foreperiod + 
+                        (1 + foreperiod | ID),
                       data = data2,
                       control = lmerControl(optimizer = c('bobyqa'), optCtrl = list(maxfun=2e5), calc.derivs = FALSE),
                       progress = TRUE,
@@ -264,8 +264,13 @@ fp_bfs <- sapply(srange, function(range) {
             onlybf = TRUE)
 })
 
-plot(srange, fp_bfs)
+jpeg("./Analysis/Plots/BF_seq.jpeg", width = 600, height = 500)
+plot(srange, fp_bfs,
+     xlab = "n of participants",
+     ylab = "Bayes Factor",
+     main = "Bayes Factors for FP effect compared between conditions")
 lines(srange, fp_bfs)
+dev.off()
 
 #==========================================================================================#
 #==================================== 1. Descriptives ======================================
@@ -883,3 +888,6 @@ bAnova <- anovaBF(meanRT ~ condition * foreperiod,
                   data = summaryData2)
 
 bAnova/max(bAnova)
+
+
+#====================== 5. Estimate n of trials to detect effect ======================
