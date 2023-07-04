@@ -383,7 +383,8 @@ ggplot(data = diffsData,
 fpAnova <- aov_ez(id = "ID",
        dv = "meanRT",
        data = summaryData2,
-       within = c("foreperiod", "condition"))
+       within = c("foreperiod", "condition"),
+       anova_table = list(es = "pes"))
 
 ### Check assumptions
 
