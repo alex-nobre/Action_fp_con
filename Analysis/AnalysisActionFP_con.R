@@ -24,6 +24,13 @@ library(bayestestR)
 # Load data
 source('./Analysis/Prepare_data_con.R')
 
+
+summaryData2 <- summaryData2 %>%
+  arrange(ID, block) %>%
+  group_by(ID) %>%
+  mutate(fpOrder = ifelse(foreperiod[1] == 1000, "short-long", "long-short")) %>%
+  ungroup()
+
 #==========================================================================================#
 #======================================= 0. Data quality ===================================
 #==========================================================================================#
@@ -60,7 +67,7 @@ ggplot(data=summaryData2,
   labs(title='RT by block and condition')
 
 # 1.1.3. RTs across blocks by counterbalancing order
-ggplot(data=summaryData,
+ggplot(data=summaryData2,
        aes(x=block,
            y=meanRT,
            color=counterbalance))+
@@ -75,6 +82,22 @@ ggplot(data=summaryData,
         axis.title = element_text(size = rel(1.5)))+
   scale_color_manual(values=c('blue','orange')) +
   labs(title='RT by block split by counterbalancing order')
+
+# By FP order
+ggplot(data = summaryData2,
+       aes(x = block,
+           y = meanRT,
+           color = fpOrder)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = fpOrder)) +
+  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
+  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values=c('blue','orange'))
 
 # Distribution of data
 dataHists <- ggplot(data=summaryData,
@@ -125,7 +148,7 @@ ggplot(data=filter(data,condition=='external'),
   facet_wrap(~foreperiod+ID)
 
 # Check for influence of latency of action key press on RT
-ggplot(data=filter(data,condition=='action'),
+ggplot(data=filter(data,condition=='action',action_trigger.rt < 5000),
        aes(x=action_trigger.rt,
            y=RT,
            color=foreperiod))+
@@ -379,7 +402,7 @@ ggplot(data = diffsData,
   scale_color_manual(values = c("orange","blue"))
   
 
- # Anova
+# Anova
 fpAnova <- aov_ez(id = "ID",
        dv = "meanRT",
        data = summaryData2,
@@ -478,6 +501,21 @@ fpEmmeansContrasts <- contrast(fpEmmeans[[1]],
 leveneTest(meanRT ~ condition * foreperiod,
            data = summaryData2)
 
+# Anova
+varAnova <- aov_ez(data = summaryData2,
+                   id = "ID",
+                   dv = "varRT",
+                   within = c("foreperiod", "condition"),
+                   anova_table = list(es = "pes"))
+
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = sqrt(varRT),
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar")
+
 #=========================== 2.2. FP x Accuracy by condition ===============================
 acc_by_condition <- ggplot(data = summaryDataAll,
                            aes(x = foreperiod,
@@ -509,60 +547,21 @@ AccAnova <- aov_ez(id = "ID",
                    data = summaryDataAll,
                    within = c("foreperiod", "condition"))
 
-#================================= 3. Sequential effects ==============================
-# Effects of previous orientation
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color=prevOri)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = prevOri)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue', 'orange'))
-
-ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color=seqOri)) +
-  stat_summary(fun = "mean", geom = "point", size = 1.5) +
-  stat_summary(fun = "mean", geom = "line", linewidth = 0.8, aes(group = seqOri)) +
-  stat_summary(fun.data = "mean_cl_boot", size = 0.8, width = 0.2, geom = "errorbar") +
-  labs(x = "Foreperiod",
-       y = "Mean RT",
-       color = "Previous Orientation") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5))) +
-  facet_wrap(~condition) +
-  scale_color_manual(values = c('blue', 'orange'))
-
-
-seqOriAnova <- aov_ez(id = "ID",
-                   dv = "meanRT",
-                   data = summaryData2,
-                   within = c("foreperiod", "condition", "seqOri"))
 
 #============================= 2.4. Learning effects ==============================
 firstBlockData <- data2 %>%
   filter(block == '0', trial_bl %in% 1:80)
+
 
 ggplot(data = firstBlockData,
        aes(x = trial_bl,
            y = RT,
            color = condition)) +
   stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
   #stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", width = 0.2) +
-  scale_color_manual(values = c('orange', 'blue')) +
-  facet_wrap(~ foreperiod, nrow = 2, ncol = 1)
+  scale_color_manual(values = c('orange', 'blue'))# +
+  #facet_wrap(~ foreperiod, nrow = 2, ncol = 1)
 
 
 ggplot(data = firstBlockData,
@@ -570,6 +569,35 @@ ggplot(data = firstBlockData,
            y = RT)) +
   stat_summary(fun = "mean", geom = "point") +
   stat_summary(fun = "mean_cl_boot", geom = "errorbar", width = 0.2)
+
+# Binned trials
+data2 <- data2 %>%
+  group_by(ID) %>%
+  mutate(binTrial = ntile(trial, n = 16)) %>%
+  ungroup()
+
+
+ggplot(data = data2,
+       aes(x = binTrial,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  scale_color_manual(values = c('orange', 'blue'))
+
+firstBlockData <- firstBlockData %>%
+  group_by(ID) %>%
+  mutate(binTrial = ntile(trial, n = 8)) %>%
+  ungroup()
+
+ggplot(data = firstBlockData,
+       aes(x = binTrial,
+           y = RT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  scale_color_manual(values = c('orange', 'blue'))
+
 
 # Regression by block
 blocklm <- lm(meanRT ~ foreperiod * counterbalance * block,
@@ -890,5 +918,3 @@ bAnova <- anovaBF(meanRT ~ condition * foreperiod,
 
 bAnova/max(bAnova)
 
-
-#====================== 5. Estimate n of trials to detect effect ======================

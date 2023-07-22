@@ -113,9 +113,10 @@ data <- data %>%
 # Average data
 summaryData <- data %>%
   group_by(ID,foreperiod,condition,
-           orientation,seqOri, prevOri,
+           #orientation,seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
+            varRT = var(RT),
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT)) %>%
@@ -124,9 +125,10 @@ summaryData <- data %>%
 
 summaryData2 <- data2 %>%
   group_by(ID,foreperiod,condition,
-           orientation, seqOri, prevOri,
+           #orientation, seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
+            varRT = var(RT),
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT)) %>%
@@ -135,7 +137,8 @@ summaryData2 <- data2 %>%
 
 summaryDataAll <- dataAll %>%
   group_by(ID, foreperiod, condition) %>%
-  summarise(meanAcc = mean(Acc)) %>%
+  summarise(meanAcc = mean(Acc),
+            varAcc = var(RT)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod))) %>%
   mutate(squaredNumForeperiod = numForeperiod^2,
