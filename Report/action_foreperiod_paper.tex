@@ -1,0 +1,63 @@
+\documentclass{article}
+
+\title{The influence of voluntary actions on temporal preparation to visual stimuli}
+\author{Alexandre de Pontes Nobre, André Mascioli Cravo}
+
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage[backend=biblatex, style = apa]{biblatex}
+%\usepackage{natbib}
+\usepackage{soul} % for highlighting
+
+
+\addbibresource{bibliography.bib}
+
+\usepackage{Sweave}
+\begin{document}
+\input{action_foreperiod_paper-concordance}
+
+\maketitle
+
+\section{Experiment 1}
+
+\subsection{Methods}
+
+\subsubsection{Participants}
+Thirty-seven volunteers were recruited to participate in the study. All reported normal or corrected-to-normal vision and no history of neurological disorders, and none had any knowledge of the purpose of the study before the experiment. All participants read and signed an informed consent. The experimental protocol was approved by the research ethics committee of the Federal University of ABC. Two participants were removed from the analysis due to a large number of errors (> 10\% of trials), resulting in a final sample size of 35 participants.
+
+
+\subsubsection{Stimuli and procedure}
+The experiment was conducted online on Pavlovia. Participants received the instructions and the link to the experimental after reading and signing the informed consent. They were instructed to sit quietly in a place free of distractions when performing the task.
+
+Figure 1 shows an experimental trial. Each trial started with a black fixation cross presented at the center of the screen. The fication cross remained on the screen for a period depending on the experimental condition. In the \textit{external} condition, the fixation cross remained on the screen for an interval of 1250-1750 ms (uniformly distributed), after which the warning signal (WS) was presented automatically. In the \textit{action} condition, the fixation cross remained on the screen until the participant pressed the space bar, which they could do whenever they desired. After either the fixation time or the voluntary action by the participant, the fixation changed color from black to green; this change was the WS and marked the onset of the FP. FP duration was either 600, 1200 or 1800 ms, and was pseudorandomly sampled from a uniform distribution in each trial, with the constraint the all durations were presented for an equal number of trials within a block. After the FP had elapsed, the fixation cross was replaced by the target: an imperative stimulus, which was either a go or no-go stimulus, as shown in Figure 1. Participants were instructed to press the space bar if they saw a go stimulus, or refrain from pressing any key if the saw a no-go stimulus. The target remained on the screen for 200 ms, and participants had up to 1000 ms to respond. After the response window, a blank screen was presented during a intertrial interval (ITI) drawn from a gaussian distribution with mean = 250 ms and sd = 25 ms. % min = 160 ms, max = 330 ms
+
+% Insert figure 1 here
+
+The experiment comprised four blocks of 75 trials, two for each condition (action vs. external). Within blocks, 80\% of trials were go trials, and 20\% were no-go trials. The order of the conditions was counterbalanced across participants, and blocks of different conditions could not be intermixed. Each condition started with a practice block of six trials for that condition, with three trials for each FP duration (600, 1200, and 1800 ms) and trial type (go vs no-go).
+
+
+\subsubsection{Data analysis}
+We analyzed accuracy (proportion of correct responses) and reaction time (RT) separately for each participant, condition, foreperiod and, for accuracy, trial type. For RT, only correct trials were included in the analysis. Participants with over 10\% of incorrect responses were removed from the analysis. Additionally, RTs more than 3 standard deviations away from the participant's mean RT were discarded \hl{insert mean and sd discarded}.
+For RT, we first conducted a three-way repeated measures ANOVAs with the factors foreperiod in the current trial (FP\textsubscript{n}), foreperiod in the previous trial (FP\textsubscript{n-1}), and condition.
+
+Mixed models
+same as above
+includind n-1 trial type.
+
+\section{Experiment 2}
+
+The goal of this experiment was to replicate the effect observed in experiment 1 and remove the difference between go and no-go trial.
+
+\subsection{Methods}
+
+\subsubsection{Participants}
+XXXXXXXX volunteers were recruited to participate in the study. All reported normal or corrected-to-normal vision and no history of neurological disorders, and none had any knowledge of the purpose of the study before the experiment. All participants read and signed an informed consent. XXXXXXX participants were removed from the analysis due to a large number of errors (> 10\% of trials), resulting in a final sample size of XXXXXXXX participants.
+
+\subsubsection{Stimuli and procedure}
+Experiment 2 used a similar design to experiment 1, with the following modifications. First, to remove the differences between go and no-go trials, we replaced the go/no-go task with a discrimination task. Second, to reduce the probability that the differences observed between external and action conditions were due to refractoriness of the response used to initiate the FP in the action condition, we used a longer duration for the shortest FP. Third, to run analysis with FP as a continuous predictor, we employed 4 FP durations instead of 3. Fourth, to emphasize the use of the WS as reference for temporal preparation instead of other events such as the response, ITI, or fixation cross onset, we employed an exponential distribution of ITI durations with XXXXXXXXXXX values \cite{jepma_temporal_2012}. %reference
+
+Figure 1 shows an experimental trial. Each trial started with a black fixation cross presented at the center of the screen. The fication cross remained on the screen for a period depending on the experimental condition. In the \textit{external} condition, the fixation cross remained on the screen for an interval of 1250-1750 ms (uniformly distributed), after which the warning signal (WS) was presented automatically. In the \textit{action} condition, the fixation cross remained on the screen until the participant pressed the space bar, which they could do whenever they desired. After either the fixation time or the voluntary action by the participant, the fixation changed color from black to green; this change was the WS and marked the onset of the FP. FP duration was either 600, 1200 or 1800 ms, and was pseudorandomly sampled from a uniform distribution in each trial, with the constraint the all durations were presented for an equal number of trials within a block. After the FP had elapsed, the fixation cross was replaced by the target: an imperative stimulus, which was either a go or no-go stimulus, as shown in Figure 1. Participants were instructed to press the space bar if they saw a go stimulus, or refrain from pressing any key if the saw a no-go stimulus. The target remained on the screen for 200 ms, and participants had up to 1000 ms to respond. After the response window, a blank screen was presented during a intertrial interval (ITI) drawn from a gaussian distribution with mean = 250 ms and sd = 25 ms. % min = 160 ms, max = 330 ms
+
+\printbibliography
+%\bibliography{bibliography.bib}
+
+\end{document}
