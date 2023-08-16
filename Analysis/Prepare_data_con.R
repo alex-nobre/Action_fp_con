@@ -113,7 +113,7 @@ data <- data %>%
 # Average data
 summaryData <- data %>%
   group_by(ID,foreperiod,condition,
-           #orientation,seqOri, prevOri,
+           orientation,seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
             varRT = var(RT),
@@ -125,7 +125,7 @@ summaryData <- data %>%
 
 summaryData2 <- data2 %>%
   group_by(ID,foreperiod,condition,
-           #orientation, seqOri, prevOri,
+           orientation, seqOri, prevOri,
            block,counterbalance) %>%
   summarise(meanRT = mean(RT),
             varRT = var(RT),

@@ -24,12 +24,20 @@ library(bayestestR)
 # Load data
 source('./Analysis/Prepare_data_con.R')
 
-
+# Create columns for FP length order and laterality
 summaryData2 <- summaryData2 %>%
   arrange(ID, block) %>%
   group_by(ID) %>%
   mutate(fpOrder = ifelse(foreperiod[1] == 1000, "short-long", "long-short")) %>%
   ungroup()
+  # ungroup() %>%
+  # mutate(laterality = rep(c("right", "left", "right", "right", "right", "right", NaN, "right", "right", "left", "right",
+  #                       "right", "right", "right", "right", "right", "right", "right", "right", "right",
+  #                       NaN, "right", "right", "right", "right", "left", "right", NaN, "right"), each = 4))
+
+# Check for influence of laterality
+# summaryData2 <- summaryData2 %>%
+#   filter(laterality != "left")
 
 #==========================================================================================#
 #======================================= 0. Data quality ===================================
@@ -100,7 +108,7 @@ ggplot(data = summaryData2,
   scale_color_manual(values=c('blue','orange'))
 
 # Distribution of data
-dataHists <- ggplot(data=summaryData,
+dataHists <- ggplot(data=summaryData2,
                     aes(x=meanRT,
                         color=foreperiod))+
   geom_histogram()+
@@ -145,7 +153,17 @@ ggplot(data=filter(data,condition=='external'),
            y=RT,
            color=foreperiod))+
   geom_point() +
-  facet_wrap(~foreperiod+ID)
+  theme(axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  labs(x = "External fixation duration",
+       y = "RT") +
+  facet_wrap(~foreperiod)
+ggsave("./Analysis/Plots/extfixduration.png",
+       width = 13.4,
+       height = 10)
 
 # Check for influence of latency of action key press on RT
 ggplot(data=filter(data,condition=='action',action_trigger.rt < 5000),
@@ -153,7 +171,17 @@ ggplot(data=filter(data,condition=='action',action_trigger.rt < 5000),
            y=RT,
            color=foreperiod))+
   geom_point() +
+  theme(axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.5)),
+        legend.title = element_text(size = rel(1.8))) +
+  labs(x = "Action trigger delay",
+       y = "RT") +
   facet_wrap(~foreperiod)
+ggsave("./Analysis/Plots/actiontrigpress.png",
+       width = 13.4,
+       height = 10)
 
 #================================ 0.2. Stopping rule =========================================
 #======= 0.2.1. Plots as a function of sample size ======
@@ -287,11 +315,14 @@ fp_bfs <- sapply(srange, function(range) {
             onlybf = TRUE)
 })
 
-jpeg("./Analysis/Plots/BF_seq.jpeg", width = 600, height = 500)
+jpeg("./Analysis/Plots/BF_seq.jpeg", width = 1200, height = 1000)
 plot(srange, fp_bfs,
      xlab = "n of participants",
      ylab = "Bayes Factor",
-     main = "Bayes Factors for FP effect compared between conditions")
+     main = "Bayes Factors for FP effect compared between conditions",
+     cex.lab = 2,
+     cex.axis = 2,
+     cex.main = 2.5)
 lines(srange, fp_bfs)
 dev.off()
 
@@ -318,6 +349,20 @@ contrasts(summaryData2$foreperiod) <- c(-1/2, 1/2)
 contrasts(summaryData2$condition) <- c(-1/2, 1/2)
 
 #==================== 2.1. FP x RT by condition ======================
+# main effect of condition
+ggplot(data = summaryData2,
+       aes(x = condition,
+           y = meanRT,
+           group = 1)) +
+  stat_summary(fun = 'mean', geom = 'point') +
+  stat_summary(fun = 'mean', geom = 'line' ) +
+  stat_summary(fun.data = 'mean_cl_boot', width = 0.2, geom = 'errorbar') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))
+
 # Lines by condition
 lines_by_condition <- ggplot(data = summaryData2,
        aes(x = foreperiod,
@@ -762,7 +807,7 @@ ggplot(data = data,
 
 
 # Orientation
-ggplot(data = summaryData,
+ggplot(data = summaryData2,
        aes(x = foreperiod,
            y = meanRT,
            color = orientation)) +
@@ -776,8 +821,33 @@ ggplot(data = summaryData,
         axis.title = element_text(size = rel(1.5))) +
   scale_color_manual(values = c("deeppink3","chartreuse3"))
 
+# Orientation and condition
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = orientation)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = orientation)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5))) +
+  labs(color = "Orientation",
+       x = "Foreperiod",
+       y = "mean RT") +
+  facet_wrap(~ condition) +
+  scale_color_manual(values = c("deeppink3","chartreuse3"))
+ggsave("./Analysis/Plots/RT_orientation_condition.png",
+       width = 13.4,
+       height = 10)
+
 # Previous orientation
-ggplot(data = summaryData,
+ggplot(data = summaryData2,
        aes(x = foreperiod,
            y = meanRT,
            color = prevOri)) +
@@ -791,8 +861,49 @@ ggplot(data = summaryData,
         axis.title = element_text(size = rel(1.5))) +
   scale_color_manual(values = c("lightgoldenrod1","indianred2"))
 
-# Sequential effect by previous orientation
+# Repetition/alternation
+ggplot(data = summaryData2 %>%
+         filter(!is.na(seqOri)),
+       aes(x = foreperiod,
+           y = meanRT,
+           color = seqOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5))) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
 
+
+# Repetition/alternation
+ggplot(data = summaryData2 %>%
+         filter(!is.na(seqOri)),
+       aes(x = foreperiod,
+           y = meanRT,
+           color = seqOri)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = seqOri)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.8)),
+        strip.text = element_text(size = rel(1.8)),
+        legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5))) +
+  labs(color = "Previous orientation",
+       x = "Foreperiod",
+       y = "mean RT") +
+  facet_wrap(~ condition) +
+  scale_color_manual(values = c("lightgoldenrod1","indianred2"))
+
+ggsave("./Analysis/Plots/RT_seqalt_condition.png",
+       width = 13.4,
+       height = 10)
 
 # Only action data
 ggplot(data = filter(summaryData, condition == "action"),
