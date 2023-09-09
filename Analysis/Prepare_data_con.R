@@ -106,7 +106,6 @@ data <- data %>%
   group_by(ID) %>%
   mutate(RTzscore=ifelse(!is.na(RT), compute_zscore(RT), NA),
          logRTzscore=ifelse(!is.na(RT), compute_zscore(logRT), NA)) %>%
-  #filter(abs(logRTzscore) < 3) %>%
   ungroup()
 
 
