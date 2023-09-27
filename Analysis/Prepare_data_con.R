@@ -25,23 +25,14 @@ data <- read_csv("./Analysis/dataActionFPAll.csv")
 data <- data %>%
   dplyr::select(ID, Acc, condition, block, orientation,
                 foreperiod, RT, counterbalance, 
-                extFixationDuration, action_trigger.rt) %>%
-  mutate(foreperiod = foreperiod * 1000,
-         RT = RT *1000,
-         extFixationDuration = extFixationDuration * 1000,
-         action_trigger.rt = action_trigger.rt * 1000)
-  
+                extFixationDuration, action_trigger.rt)
 
 # Coerce to factors
-data$ID <- as.factor(data$ID)
-data$condition <- data$condition %>%
-  as.factor() %>%
-  forcats::fct_relevel(c("external", "action"))
-data$block <- as.factor(data$block)
-data$orientation <- as.factor(data$orientation)
-data$foreperiod <- as.factor(data$foreperiod)
-data$counterbalance <- as.factor(data$counterbalance)
+data <- data %>%
+  mutate(across(c(ID, condition, block, orientation, foreperiod, counterbalance), as_factor))
 
+data$condition <- data$condition %>%
+  fct_relevel(c("external", "action"))
 
 # Remove practice trials
 data <- data %>%
@@ -64,30 +55,36 @@ data <- data %>%
          prevOri = as.factor(prevOri))
 
 # Save data with error trials to assess accuracy
-dataAll <- data
+dataAcc <- data
 
 # Keep only trials with correct responses to analyze RT
 data <- data %>%
   filter(!is.na(RT), Acc == 1)
 
-# Coerce foreperiod aback to numeric
+# Coerce foreperiod back to numeric
 data$numForeperiod <- as.numeric(as.character(data$foreperiod))
-dataAll$numForeperiod <- as.numeric(as.character(dataAll$foreperiod))
+dataAcc$numForeperiod <- as.numeric(as.character(dataAcc$foreperiod))
+
+# Create variable for error rate
+dataAcc$Error <- abs(dataAcc$Acc - 1)
 
 # Create log10 of continuous independent variables
 data$numLogFP <- log10(data$numForeperiod)
 data$logFP <- as.factor(data$numLogFP)
 
-dataAll$numLogFP <- log10(dataAll$numForeperiod)
-dataAll$logFP <- as.factor(dataAll$numLogFP)
+dataAcc$numLogFP <- log10(dataAcc$numForeperiod)
+dataAcc$logFP <- as.factor(dataAcc$numLogFP)
 
-# Factor version of accuracy
-dataAll$acc_result <- as.factor(dataAll$Acc)
+# Factor version of accuracy/error rate
+dataAcc$acc_result <- as.factor(dataAcc$Acc)
+dataAcc$error_result <- as.factor(dataAcc$Error)
 
 # Remove extreme values
+ntrials_before_extrem <- nrow(data)
 data <- data %>%
-  filter(RT < 1000) %>%
-  filter(RT > 150)
+  filter(RT < 1.0) %>%
+  filter(RT > 0.15)
+ntrials_after_extrem <- nrow(data)
 
 # Transform RT to reduce skew
 data$logRT <- ifelse(!is.na(data$RT), log10(data$RT), NA) # log-transform
@@ -134,10 +131,11 @@ summaryData2 <- data2 %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
 
-summaryDataAll <- dataAll %>%
+summaryDataAcc <- dataAcc %>%
   group_by(ID, foreperiod, condition) %>%
   summarise(meanAcc = mean(Acc),
-            varAcc = var(RT)) %>%
+            varAcc = var(RT),
+            errorRate = mean(Error)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod))) %>%
   mutate(squaredNumForeperiod = numForeperiod^2,

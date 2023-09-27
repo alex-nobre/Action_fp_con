@@ -6,18 +6,33 @@
 #================================================================================#
 
 # Load necessary packages
+
+# Read and process data
 library(tidyverse)
 library(broom)
 library(magrittr)
+library(data.table)
+
+# Plotting
 library(lattice)
+library(gtable)
+library(gridExtra)
+library(gridGraphics)
+library(ggdist)
+library(ggpubr)
+
+# Linear models
+library(car)
+library(codingMatrices)
+library(modelr)
+
+# Mixed modeling
 library(afex)
 library(emmeans)
 library(lme4)
-library(car)
-library(data.table)
-library(codingMatrices)
 library(performance)
-library(modelr)
+
+# Bayesian analysis
 library(BayesFactor)
 library(bayestestR)
 
@@ -166,7 +181,7 @@ ggsave("./Analysis/Plots/extfixduration.png",
        height = 10)
 
 # Check for influence of latency of action key press on RT
-ggplot(data=filter(data,condition=='action',action_trigger.rt < 5000),
+ggplot(data=filter(data,condition=='action',action_trigger.rt < 5.0),
        aes(x=action_trigger.rt,
            y=RT,
            color=foreperiod))+
@@ -183,8 +198,6 @@ ggsave("./Analysis/Plots/actiontrigpress.png",
        width = 13.4,
        height = 10)
 
-# Compute % of trials excluded due to extreme value trimming
-(nrow(data) - nrow(data2))/nrow(data) * 100
 
 #================================ 0.2. Stopping rule =========================================
 #======= 0.2.1. Plots as a function of sample size ======
@@ -329,10 +342,254 @@ plot(srange, fp_bfs,
 lines(srange, fp_bfs)
 dev.off()
 
+# % of extreme RTs removed
+(ntrials_before_extrem - ntrials_after_extrem)/ntrials_before_extrem * 100
+
+# % of RTs removed due to trimming by participant
+n_notrim <- data %>%
+  group_by(ID) %>%
+  summarise(n_trials_no_trim = n())
+
+n_trim <- data2 %>%
+  group_by(ID) %>%
+  summarise(n_trials_trim = n())
+
+n_trials_comp <- left_join(n_notrim, n_trim) %>%
+  mutate(trimmed = n_trials_no_trim - n_trials_trim,
+         percent_trimmed = (trimmed/n_trials_no_trim) * 100) %>%
+  summarise(meanT = mean(percent_trimmed), sdT = sd(percent_trimmed))
+
 #==========================================================================================#
 #==================================== 1. Descriptives ======================================
 #==========================================================================================#
 
+#======================================== Plots ============================================
+# main effect of condition
+ggplot(data = summaryData2,
+       aes(x = condition,
+           y = meanRT,
+           group = 1)) +
+  stat_summary(fun = 'mean', geom = 'point') +
+  stat_summary(fun = 'mean', geom = 'line' ) +
+  stat_summary(fun.data = 'mean_cl_boot', width = 0.2, geom = 'errorbar') +
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))
+
+# RT by FP and condition
+RT_by_condition_part <- ggplot(data = summaryData2,
+                               aes(x = foreperiod,
+                                   y = meanRT,
+                                   color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
+  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
+  labs(title = "RT by condition",
+       x = "Foreperiod",
+       y = "Mean RT") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.2))) +
+  scale_color_manual(values = c("orange","blue")) +
+  facet_wrap(~ID)
+ggplot2::ggsave("./Analysis/Plots/plot_by_sub.png",
+                RT_by_condition_part)
+
+RT_by_condition <- ggplot(data = summaryData2 %>%
+                            group_by(ID, foreperiod, condition) %>%
+                            summarise(meanRT = mean(meanRT)),
+                          aes(x = foreperiod,
+                              y = meanRT,
+                              color = condition)) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.1, geom = "errorbar") +
+  labs(title = "RT",
+       x = "FP (s)",
+       y = "Mean RT (s)",
+       color = "Condition") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.2)),
+        axis.title = element_text(size = rel(1.2)),
+        legend.key = element_blank(),
+        legend.box.spacing = unit(0, "pt")) +
+  scale_color_manual(values = c("orange","blue"),
+                     label = c("External", "Action"))
+ggplot2::ggsave("./Analysis/Plots/RT_by_condition.pdf",
+                RT_by_condition,
+                width = 7.7,
+                height = 5.8)
+
+acc_by_condition <- ggplot(data = summaryDataAcc %>%
+                             group_by(ID, foreperiod, condition) %>%
+                             summarise(meanAcc = mean(meanAcc)),
+                           aes(x = foreperiod,
+                               y = meanAcc,
+                               color = condition)) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.1, geom = "errorbar") +
+  labs(x = "FP (s)",
+       y = "Mean prop. correct",
+       color = "Condition",
+       title = "Accuracy") +
+  scale_color_manual(values = c("orange", "blue"),
+                     label = c("External", "Action")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)),
+        legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5)),
+        legend.key = element_blank(),
+        legend.box.spacing = unit(0, "pt"))
+ggsave("./Analysis/Plots/Acc_by_condition.pdf",
+       acc_by_condition,
+       width = 7.7,
+       height = 5.8)
+
+error_by_condition <- ggplot(data = summaryDataAcc %>%
+                             group_by(ID, foreperiod, condition) %>%
+                             summarise(errorRate = mean(errorRate)),
+                           aes(x = foreperiod,
+                               y = errorRate,
+                               color = condition)) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 1.4, aes(group = condition)) +
+  stat_summary(fun.data = "mean_se", linewidth = 1.2, width = 0.1, geom = "errorbar") +
+  labs(x = "FP (s)",
+       y = "Mean Error Rate",
+       color = "Condition",
+       title = "Error Rate") +
+  scale_color_manual(values = c("orange", "blue"),
+                     label = c("External", "Action")) +
+  theme(plot.title = element_text(hjust = 0.5, size = 14),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)),
+        legend.text = element_text(size = rel(1.2)),
+        legend.title = element_text(size = rel(1.5)),
+        legend.key = element_blank(),
+        legend.box.spacing = unit(0, "pt"),
+        legend.margin = margin(5.5, 5.5, 5.5, 1),
+        plot.margin = unit(c(5.5, 5.5, 5.5, 1), "pt"))
+ggsave("./Analysis/Plots/error_by_condition.pdf",
+       error_by_condition,
+       width = 7.7,
+       height = 5.8)
+
+# RT and accuracy in single panel
+cond_legend <- gtable_filter(ggplot_gtable(ggplot_build(acc_by_condition + 
+                                                          theme(legend.title = element_text(size = rel(1.1)),
+                                                                legend.text = element_text(size = rel(0.9))))), "guide-box")
+
+
+# Visualize
+grid.arrange(RT_by_condition + theme(legend.position = "none",
+                                     axis.text = element_text(size = rel(1.2)),
+                                     axis.title = element_text(size = rel(1.4)),
+                                     plot.title = element_text(size = rel(1.5))),
+             acc_by_condition + theme(legend.position = "none",
+                                      axis.text = element_text(size = rel(1.2)),
+                                      axis.title = element_text(size = rel(1.4)),
+                                      plot.title = element_text(size = rel(1.5))),
+             cond_legend,
+             nrow = 1,
+             widths = c(4/9, 4/9, 1/9))
+
+# Save plots
+comb_plots <- arrangeGrob(RT_by_condition + theme(legend.position = "none",
+                                                  axis.text = element_text(size = rel(1.2)),
+                                                  axis.title = element_text(size = rel(1.4)),
+                                                  plot.title = element_text(size = rel(1.5))),
+                          acc_by_condition + theme(legend.position = "none",
+                                                   axis.text = element_text(size = rel(1.2)),
+                                                   axis.title = element_text(size = rel(1.4)),
+                                                   plot.title = element_text(size = rel(1.5))),
+                          cond_legend,
+                          nrow = 1,
+                          widths = c(4/9, 4/9, 1/9))
+
+ggsave("./Analysis/Plots/comb_plots.pdf",
+       comb_plots,
+       width = 20,
+       height = 11.11,
+       unit = "cm")
+
+# RT and error rate in single panel
+cond_legend <- gtable_filter(ggplot_gtable(ggplot_build(error_by_condition + 
+                                                          theme(legend.title = element_text(size = rel(1.1)),
+                                                                legend.text = element_text(size = rel(0.9))))), "guide-box")
+
+xaxis_title <- text_grob(error_by_condition$labels$x,
+                         just = "top",
+                         size = (error_by_condition + 
+                                   theme(axis.title = element_text(size = rel(1.4))))$theme$axis.title$size * 11) # 11 is the base size in theme_grey
+
+
+xaxis_title_margin <- unit(2, "line")
+
+
+# Visualize
+grid.arrange(arrangeGrob(RT_by_condition + theme(legend.position = "none",
+                                     axis.text = element_text(size = rel(1.2)),
+                                     axis.title = element_text(size = rel(1.4)),
+                                     plot.title = element_text(size = rel(1.5)),
+                                     axis.title.x = element_blank()),
+             error_by_condition + theme(legend.position = "none",
+                                      axis.text = element_text(size = rel(1.2)),
+                                      axis.title = element_text(size = rel(1.4)),
+                                      plot.title = element_text(size = rel(1.5)),
+                                      axis.title.x = element_blank()),
+             cond_legend,
+             nrow = 1,
+             widths = c(4/9, 4/9, 1/9)),
+             xaxis_title,
+             heights = unit.c(unit(1, "null"),
+                              grobHeight(xaxis_title) + xaxis_title_margin),
+             nrow = 2)
+
+# Save plots
+rt_error_plots <- arrangeGrob(arrangeGrob(RT_by_condition + theme(legend.position = "none",
+                                                                  axis.text = element_text(size = rel(1.2)),
+                                                                  axis.title = element_text(size = rel(1.4)),
+                                                                  plot.title = element_text(size = rel(1.5)),
+                                                                  axis.title.x = element_blank()),
+                                          error_by_condition + theme(legend.position = "none",
+                                                                     axis.text = element_text(size = rel(1.2)),
+                                                                     axis.title = element_text(size = rel(1.4)),
+                                                                     plot.title = element_text(size = rel(1.5)),
+                                                                     axis.title.x = element_blank()),
+                                          cond_legend,
+                                          nrow = 1,
+                                          widths = c(4/9, 4/9, 1/9)),
+                              xaxis_title,
+                              heights = unit.c(unit(1, "null"),
+                                               grobHeight(xaxis_title) + xaxis_title_margin),
+                              nrow = 2)
+
+ggsave("./Analysis/Plots/rt_error_plots.pdf",
+       rt_error_plots,
+       width = 20,
+       height = 11.11,
+       unit = "cm")
+
+#==================================== 1.2. Tables ================================
 # By foreperiod and condition
 meandata <- summaryData2 %>%
   group_by(condition, foreperiod) %>%
@@ -363,66 +620,6 @@ contrasts(summaryData2$foreperiod) <- c(-1/2, 1/2)
 contrasts(summaryData2$condition) <- c(-1/2, 1/2)
 
 #==================== 2.1. FP x RT by condition ======================
-# main effect of condition
-ggplot(data = summaryData2,
-       aes(x = condition,
-           y = meanRT,
-           group = 1)) +
-  stat_summary(fun = 'mean', geom = 'point') +
-  stat_summary(fun = 'mean', geom = 'line' ) +
-  stat_summary(fun.data = 'mean_cl_boot', width = 0.2, geom = 'errorbar') +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5)))
-
-# Lines by condition
-lines_by_condition <- ggplot(data = summaryData2,
-       aes(x = foreperiod,
-           y = meanRT,
-           color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  labs(title = "RT by condition",
-       x = "Foreperiod",
-       y = "Mean RT") +
-  theme(plot.title = element_text(hjust = 0.5, size = 14),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2))) +
-  scale_color_manual(values = c("orange","blue")) +
-  facet_wrap(~ID)
-ggplot2::ggsave("./Analysis/Plots/plot_by_sub.png",
-                lines_by_condition)
-
-lines_by_condition <- ggplot(data = summaryData2,
-                             aes(x = foreperiod,
-                                 y = meanRT,
-                                 color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", linewidth = 1, aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", width = 0.2, geom = "errorbar") +
-  labs(title = "RT by condition",
-       x = "Foreperiod",
-       y = "Mean RT",
-       color = "Condition") +
-  theme(plot.title = element_text(hjust = 0.5, size = 14),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.2)),
-        axis.title = element_text(size = rel(1.2))) +
-  scale_color_manual(values = c("orange","blue"))
-ggplot2::ggsave("./Analysis/Plots/plot_by_condition.png",
-                lines_by_condition,
-                width = 7.7,
-                height = 5.8)
-
-
 # Plot error bars based on differences from subject average
 condDiffs <- function(column) {
   # Compute sub RT mean
@@ -489,6 +686,17 @@ names(p) = levels(data$ID)
 names(p[p < 0.05])
 
 
+# Bootstrap
+library(marginaleffects)
+
+
+fpComp <- avg_comparisons(fpAnova$lm, variables = c("condition", "foreperiod"))
+
+fpComp <- avg_comparisons(fpAnova, by = "foreperiod", variables = "condition")
+
+fpComp |> inferences(method = "boot")
+
+
 # Try transformations - invRT
 invfpAnova <- aov_ez(id = "ID",
                   dv = "meanInvRT",
@@ -515,7 +723,8 @@ plot(is_norm, type = 'qq', detrend = TRUE)
 logfpAnova <- aov_ez(id = "ID",
                      dv = "meanLogRT",
                      data = summaryData2,
-                     within = c("foreperiod", "condition"))
+                     within = c("foreperiod", "condition"),
+                     anova_table = list(es = "pes"))
 
 ### Check assumptions
 
@@ -533,16 +742,6 @@ plot(is_norm, type = 'qq', detrend = TRUE)
 
 # The log-transform does not solve the problem either
 
-fpregression <- lm(meanRT ~ condition * foreperiod, data = summaryData)
-summary(fpregression)
-anova(fpregression)
-
-logfpregression <- lm(meanRT ~ condition * logFP, data = summaryData)
-anova(logfpregression)
-
-# fpEmmeans <- emmeans(fpAnova,
-#                      pairwise ~ condition|foreperiod,
-#                      adjust = 'none')
 
 
 fpEmmeans <- emmeans(fpAnova,
@@ -577,8 +776,6 @@ ggplot(data = summaryData2,
   stat_summary(fun.data = "mean_cl_boot", geom = "errorbar")
 
 #========================== 2.2. Orientation sequential effects ============================
-
-
 # Orientation
 ggplot(data = summaryData2,
        aes(x = foreperiod,
@@ -681,36 +878,39 @@ ggsave("./Analysis/Plots/RT_seqalt_condition.png",
        height = 10)
 
 #=========================== 2.3. FP x Accuracy by condition ===============================
-acc_by_condition <- ggplot(data = summaryDataAll,
-                           aes(x = foreperiod,
-                               y = meanAcc,
-                               color = condition)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
-  stat_summary(fun.data = "mean_cl_boot", geom = "errorbar", linewidth = 0.8, width = 0.1) +
-  labs(x = "Foreperiod",
-       y = "Mean accuracy",
-       color = "condition",
-       title = "Proportion of errors") +
-  scale_color_manual(values = c("orange", "blue")) +
-  theme(plot.title = element_text(hjust = 0.5, size = 14),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5)),
-        legend.text = element_text(size = rel(1.2)),
-        legend.title = element_text(size = rel(1.5)))
-ggsave("./Analysis/Plots/Acc_by_condition.png",
-       acc_by_condition,
-       width = 7.7,
-       height = 5.8)
+
 
 AccAnova <- aov_ez(id = "ID",
                    dv = "meanAcc",
-                   data = summaryDataAll,
-                   within = c("foreperiod", "condition"))
+                   data = summaryDataAcc,
+                   within = c("foreperiod", "condition"),
+                   anova_table = list(es = "pes"))
 
+
+check_sphericity(AccAnova)
+
+is_norm_acc <- check_normality(AccAnova)
+
+# Visualize
+groupedAcc <- summaryDataAcc %>%
+  group_by(ID, foreperiod, condition) %>%
+  summarise(meanAcc = mean(meanAcc))
+
+
+hist(groupedAcc$meanAcc)
+
+plot(is_norm_acc)
+
+plot(is_norm_acc, type = "qq")
+
+plot(is_norm_acc, type = "qq", detrend = TRUE)
+
+friedman.test(y = groupedAcc$meanAcc, groups = c(groupedAcc$condition, groupedAcc$foreperiod), blocks = groupedAcc$ID)
+
+
+library(permuco)
+
+aovperm(meanAcc ~ foreperiod * condition + Error(ID/(foreperiod * condition)), data = summaryDataAcc)
 
 #============================= 2.4. Learning effects ==============================
 firstBlockData <- data2 %>%
