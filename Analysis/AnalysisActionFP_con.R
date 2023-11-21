@@ -43,7 +43,12 @@ source('./Analysis/Prepare_data_con.R')
 summaryData2 <- summaryData2 %>%
   arrange(ID, block) %>%
   group_by(ID) %>%
-  mutate(fpOrder = ifelse(foreperiod[1] == 1000, "short-long", "long-short")) %>%
+  #mutate(fpOrder = ifelse(foreperiod[1] == 1.0, "short-long", "long-short")) %>%
+  mutate(fpOrder = case_when((foreperiod[1] == 1.0 & tail(foreperiod, n = 1) == 2.8) ~ "SLSL",
+                             (foreperiod[1] == 1.0 & tail(foreperiod, n = 1) == 1.0) ~ "SLLS",
+                             (foreperiod[1] == 2.8 & tail(foreperiod, n = 1) == 2.8) ~ "LSSL",
+                             (foreperiod[1] == 2.8 & tail(foreperiod, n = 1) == 1.0) ~ "LSLS")) %>%
+  mutate(fpOrder = as_factor(fpOrder)) %>%
   ungroup()
   # ungroup() %>%
   # mutate(laterality = rep(c("right", "left", "right", "right", "right", "right", NaN, "right", "right", "left", "right",
@@ -105,22 +110,6 @@ ggplot(data=summaryData2,
         axis.title = element_text(size = rel(1.5)))+
   scale_color_manual(values=c('blue','orange')) +
   labs(title='RT by block split by counterbalancing order')
-
-# By FP order
-ggplot(data = summaryData2,
-       aes(x = block,
-           y = meanRT,
-           color = fpOrder)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean", geom = "line", aes(group = fpOrder)) +
-  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
-  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
-        panel.grid.major=element_blank(),
-        panel.grid.minor=element_blank(),
-        panel.background=element_blank(),
-        axis.text = element_text(size = rel(1.5)),
-        axis.title = element_text(size = rel(1.5)))+
-  scale_color_manual(values=c('blue','orange'))
 
 # Distribution of data
 dataHists <- ggplot(data=summaryData2,
@@ -197,6 +186,27 @@ ggplot(data=filter(data,condition=='action',action_trigger.rt < 5.0),
 ggsave("./Analysis/Plots/actiontrigpress.png",
        width = 13.4,
        height = 10)
+
+# Histograms of delays between action and WS
+ggplot(data = data2) +
+  geom_histogram(aes(x = round(delay,3)))
+
+# Frequency of values in delay vector
+table(round(data2$delay, 3))
+
+# Plot RT against delay excluding zero-delay trials
+ggplot(data = filter(data2, delay > 0, delay < 0.034), aes(x = delay, y = RT)) +
+  geom_point() +
+  geom_abline()
+
+# Plot RT against delay with best-fitting regression line
+ggplot(data = data2, aes(x = delay, y = RT)) +
+  geom_point() +
+  geom_abline() +
+  ylim(c(0,1.0))
+
+# Correlation between RT and delay excluding zero-delay trials
+cor(filter(goData2, delay > 0)$delay, filter(goData2, delay > 0)$RT)
 
 
 #================================ 0.2. Stopping rule =========================================
@@ -363,7 +373,7 @@ n_trials_comp <- left_join(n_notrim, n_trim) %>%
 #==================================== 1. Descriptives ======================================
 #==========================================================================================#
 
-#======================================== Plots ============================================
+#============================== 1.1. Plots ====================================
 # main effect of condition
 ggplot(data = summaryData2,
        aes(x = condition,
@@ -400,6 +410,7 @@ RT_by_condition_part <- ggplot(data = summaryData2,
 ggplot2::ggsave("./Analysis/Plots/plot_by_sub.png",
                 RT_by_condition_part)
 
+# Grand averages
 RT_by_condition <- ggplot(data = summaryData2 %>%
                             group_by(ID, foreperiod, condition) %>%
                             summarise(meanRT = mean(meanRT)),
@@ -588,6 +599,12 @@ ggsave("./Analysis/Plots/rt_error_plots.pdf",
        width = 20,
        height = 11.11,
        unit = "cm")
+
+# ggsave("./Analysis/Plots/rt_error_plots.tiff",
+#        rt_error_plots,
+#        width = 20,
+#        height = 11.11,
+#        unit = "cm")
 
 #==================================== 1.2. Tables ================================
 # By foreperiod and condition
@@ -913,6 +930,8 @@ library(permuco)
 aovperm(meanAcc ~ foreperiod * condition + Error(ID/(foreperiod * condition)), data = summaryDataAcc)
 
 #============================= 2.4. Learning effects ==============================
+
+# 2.4.1. Examine first trials for possible stabilization of RT
 firstBlockData <- data2 %>%
   filter(block == '0', trial_bl %in% 1:80)
 
@@ -927,27 +946,51 @@ ggplot(data = firstBlockData,
   scale_color_manual(values = c('orange', 'blue'))# +
   #facet_wrap(~ foreperiod, nrow = 2, ncol = 1)
 
-
-ggplot(data = firstBlockData,
-       aes(x = action_trigger.rt,
-           y = RT)) +
-  stat_summary(fun = "mean", geom = "point") +
-  stat_summary(fun = "mean_cl_boot", geom = "errorbar", width = 0.2)
-
-# Binned trials
-data2 <- data2 %>%
-  group_by(ID) %>%
-  mutate(binTrial = ntile(trial, n = 16)) %>%
-  ungroup()
-
-
+# Examine learning across all trials
 ggplot(data = data2,
-       aes(x = binTrial,
+       aes(x = trial,
            y = RT,
            color = condition)) +
   stat_summary(fun = "mean", geom = "point") +
   stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  geom_smooth() +
+  scale_color_manual(values = c('orange', 'blue')) +
+  facet_wrap(~counterbalance)
+
+
+# Bin trials across all blocks
+data2 <- data2 %>%
+  group_by(ID) %>%
+  mutate(binTrial = ntile(trial, n =4)) %>%
+  ungroup()
+
+ggplot(data = data2,
+       aes(x = binTrial,
+           y = RT)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = 1)) +
   scale_color_manual(values = c('orange', 'blue'))
+
+
+# Binned trials by condition
+data2 <- data2 %>%
+  group_by(ID, condition) %>%
+  mutate(binTrial = ntile(trial, n =2)) %>%
+  mutate(binTrial = as.factor(binTrial)) %>%
+  ungroup()
+
+
+ggplot(data = data2 %>%
+         group_by(ID, condition, counterbalance, binTrial) %>%
+         summarise(meanRT = mean(RT)),
+       aes(x = binTrial,
+           y = meanRT,
+           color = condition)) +
+  geom_jitter(height = 0, width = 0.15, alpha = 0.5) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", linewidth = 0.5, aes(group = condition)) +
+  scale_color_manual(values = c('orange', 'blue')) +
+  facet_wrap(~ counterbalance)
 
 firstBlockData <- firstBlockData %>%
   group_by(ID) %>%
@@ -980,11 +1023,51 @@ ggplot(data = data2,
   scale_color_manual(values = c('orange', 'blue')) +
   facet_wrap(~ foreperiod, nrow = 2, ncol = 1)
 
+# 2.4.2. Split participants' trias in 3 bins and compare average RTs
+dataBin <- data2 %>%
+  group_by(ID, condition) %>%
+  mutate(trialBin)
 
+
+# 2.4.3. Examine fp length order by condition
+# By FP order
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
+  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
+  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values=c('orange','blue')) +
+  facet_grid(counterbalance ~ fpOrder)
+
+# By FP order and block
+ggplot(data = summaryData2,
+       aes(x = foreperiod,
+           y = meanRT,
+           color = condition)) +
+  stat_summary(fun = "mean", geom = "point") +
+  stat_summary(fun = "mean", geom = "line", aes(group = condition)) +
+  stat_summary(fun.data='mean_cl_boot',width=0.2,geom='errorbar')+
+  theme(plot.title=element_text(size = rel(2), hjust = 0.5),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        panel.background=element_blank(),
+        axis.text = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5)))+
+  scale_color_manual(values=c('orange','blue')) +
+  facet_grid(counterbalance ~ fpOrder * block)
 
 #================================== 3. Bayesian analysis ============================
 bAnova <- anovaBF(meanRT ~ condition * foreperiod,
                   data = summaryData2)
 
 bAnova/max(bAnova)
+
 

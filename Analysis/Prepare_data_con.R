@@ -105,6 +105,25 @@ data <- data %>%
          logRTzscore=ifelse(!is.na(RT), compute_zscore(logRT), NA)) %>%
   ungroup()
 
+###############################################################
+# Add delay data
+###############################################################
+delayData <- read_csv("./Analysis/delayDataAll.csv") %>%
+  mutate(across(c(ID, condition), as_factor)) %>%
+  select(-condition)
+
+data <- inner_join(data, delayData, by = c("trial", "ID"))
+data2 <- inner_join(data2, delayData, by = c("trial", "ID"))
+dataAcc <- inner_join(dataAcc, delayData, by = c("trial", "ID"))
+
+data <- data %>%
+  mutate(corRT = RT - delay)
+data2 <- data2 %>%
+  mutate(corRT = RT - delay)
+dataAcc <- dataAcc %>%
+  mutate(corRT = RT - delay)
+################################################################
+
 
 # Average data
 summaryData <- data %>%
@@ -115,7 +134,8 @@ summaryData <- data %>%
             varRT = var(RT),
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
-            meanInvRT = mean(invRT)) %>%
+            meanInvRT = mean(invRT),
+            meanCorRT = mean(corRT)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
 
@@ -127,7 +147,8 @@ summaryData2 <- data2 %>%
             varRT = var(RT),
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
-            meanInvRT = mean(invRT)) %>%
+            meanInvRT = mean(invRT),
+            meanCorRT = mean(corRT)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
 
@@ -135,7 +156,8 @@ summaryDataAcc <- dataAcc %>%
   group_by(ID, foreperiod, condition) %>%
   summarise(meanAcc = mean(Acc),
             varAcc = var(RT),
-            errorRate = mean(Error)) %>%
+            errorRate = mean(Error),
+            meanCorRT = mean(corRT)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod))) %>%
   mutate(squaredNumForeperiod = numForeperiod^2,
