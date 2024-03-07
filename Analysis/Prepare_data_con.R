@@ -24,8 +24,8 @@ data <- read_csv("./Analysis/dataActionFPAll.csv")
 # Remove unnecessary columns
 data <- data %>%
   dplyr::select(ID, Acc, condition, block, orientation,
-                foreperiod, RT, counterbalance, 
-                extFixationDuration, action_trigger.rt)
+                foreperiod, RT, counterbalance,
+                extFixationDuration, action_trigger.rt, ITI)
 
 # Coerce to factors
 data <- data %>%
@@ -53,6 +53,10 @@ data <- data %>%
          prevOri = lag(orientation)) %>%
   mutate(seqOri = as.factor(seqOri),
          prevOri = as.factor(prevOri))
+
+# Create column for total ITI depending on condition
+data <- data %>%
+  mutate(ITItotal = ifelse(condition == 'action', ITI + action_trigger.rt, ITI + extFixationDuration))
 
 # Save data with error trials to assess accuracy
 dataAcc <- data
@@ -115,13 +119,6 @@ delayData <- read_csv("./Analysis/delayDataAll.csv") %>%
 data <- inner_join(data, delayData, by = c("trial", "ID"))
 data2 <- inner_join(data2, delayData, by = c("trial", "ID"))
 dataAcc <- inner_join(dataAcc, delayData, by = c("trial", "ID"))
-
-data <- data %>%
-  mutate(corRT = RT - delay)
-data2 <- data2 %>%
-  mutate(corRT = RT - delay)
-dataAcc <- dataAcc %>%
-  mutate(corRT = RT - delay)
 ################################################################
 
 
@@ -135,7 +132,8 @@ summaryData <- data %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanCorRT = mean(corRT)) %>%
+            meanCorRT = mean(corRT),
+            meanITITotal = mean(ITITotal)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
 
@@ -148,7 +146,8 @@ summaryData2 <- data2 %>%
             meanLogRT = mean(logRT),
             meanRTzscore = mean(RTzscore),
             meanInvRT = mean(invRT),
-            meanCorRT = mean(corRT)) %>%
+            meanCorRT = mean(corRT),
+            meanITITotal = mean(ITITotal)) %>%
   ungroup() %>%
   mutate(numForeperiod=as.numeric(as.character(foreperiod)))
 
@@ -157,7 +156,8 @@ summaryDataAcc <- dataAcc %>%
   summarise(meanAcc = mean(Acc),
             varAcc = var(RT),
             errorRate = mean(Error),
-            meanCorRT = mean(corRT)) %>%
+            meanCorRT = mean(corRT),
+            meanITITotal = mean(ITITotal)) %>%
   ungroup() %>%
   mutate(numForeperiod = as.numeric(as.character(foreperiod))) %>%
   mutate(squaredNumForeperiod = numForeperiod^2,

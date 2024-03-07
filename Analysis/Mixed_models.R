@@ -2,12 +2,17 @@
 
 # Load packages
 
-# Data processing and plotting
+# Data processing
 library(magrittr)
 library(tidyverse)
 library(lattice)
+
+# Plotting
 library(gridExtra)
 library(data.table)
+
+# Descriptives
+library(Hmisc)
 
 # Simple models
 library(car)
@@ -386,7 +391,7 @@ trimlog <- mixed(logRT ~ 1 + foreperiod + condition + foreperiod:condition +
 anova(trimlog)
 
 # Random-intercept only model
-trimlog1v2 <- mixed(logRT ~ 1 + foreperiod * condition + 
+trimlogv2 <- mixed(logRT ~ 1 + foreperiod * condition + 
                          (1 | ID),
                        data=data2,
                        control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
@@ -394,19 +399,20 @@ trimlog1v2 <- mixed(logRT ~ 1 + foreperiod * condition +
                        expand_re = TRUE,
                        method =  'KR',
                        REML=TRUE,
-                       return = "merMod",
-                       check_contrasts = FALSE)
+                       return = "merMod")
 
 
 # Compare BICs and AICs
-BIC(trimlog1, trimlog1v2)
+BIC(trimlog, trimlogv2)
 
-AIC(trimlog1, trimlog1v2)
+AIC(trimlog, trimlogv2)
 
-cor(fitted(trimlog1), data2$logRT)^2
-cor(fitted(trimlog1v2), data2$logRT)^2
+cor(fitted(trimlog), data2$logRT)^2
+cor(fitted(trimlogv2), data2$logRT)^2
 
-# Full model explains a larger part of the variance
+# Intercept only models has slightly lower BIC and AIC, but also lower correlation with data
+# It is also less appropriate when considering the plots, which seem to show random slopes for condition and FP
+# Since the full model converges, we choose it as our final model
 
 #==============================================================================================#
 #==================================== 3. Model assessment ======================================
@@ -560,93 +566,6 @@ trimlogfplmmML <- lmer(logRT ~ 1 + condition + numForeperiod + condition:numFore
 
 anova(trimlogfplmmML, trimlogfplm)
 
-#============ 3.5. Hierarchical entry ===============
-h_trimlogfplmm1 <- mixed(logRT ~ 1 + numForeperiod + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method = 'KR',
-                         REML=TRUE,
-                         return = "merMod")
-
-h_trimlogfplmm2 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-h_trimlogfplmm3 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-h_trimlogfplmm4 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-h_trimlogfplmm5 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
-                           condition:numForeperiod + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-h_trimlogfplmm6 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
-                           condition:numForeperiod + condition:numOneBackFP + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-h_trimlogfplmm7 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
-                           condition:numForeperiod + condition:numOneBackFP + condition:numOneBackFP:numForeperiod + (1 | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-
-h_trimlogfplmm8 <- mixed(logRT ~ 1 + numForeperiod + numOneBackFP + numForeperiod:numOneBackFP + condition + 
-                           condition:numForeperiod + condition:numOneBackFP + condition:numOneBackFP:numForeperiod + (1 + condition | ID),
-                         data=data2,
-                         control = lmerControl(optimizer = c("bobyqa"),optCtrl=list(maxfun=2e5),calc.derivs = FALSE),
-                         progress = TRUE,
-                         expand_re = TRUE,
-                         method =  'KR',
-                         REML=TRUE,
-                         return = "merMod",
-                         check_contrasts = FALSE)
-
-anova(h_trimlogfplmm1, h_trimlogfplmm2, h_trimlogfplmm3, h_trimlogfplmm4, 
-      h_trimlogfplmm5, h_trimlogfplmm6, h_trimlogfplmm7, h_trimlogfplmm8)
 
 
 #==================== 3.3. Run model separately for action and external conditions ===================

@@ -12,8 +12,11 @@ import pandas as pd
 import glob
 import os
 
+# File paths
 filesPath = '.\Data'
+gDrivePath = 'G:/My Drive/Post-doc/Projetos/Action_foreperiod/Experimento_3_FP_con/Analysis/'
 
+# Find files
 FileList=glob.glob(filesPath + '/*.csv')
 FileList.sort()
 
@@ -29,12 +32,13 @@ for iFile,FileName in enumerate(FileList):
     ID=FileName[7:10]
          
     # Remove unnecessary columns
-    dataActionFP = dataActionFP[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration']]
+    dataActionFP = dataActionFP[['participant', 'date', 'Response.corr', 'blockCondition', 'block', 'orientation', 'foreperiod', 'corrAns', 'Response.rt', 'action_trigger.rt', 'Response.keys', 'counterbalance', 'extFixationDuration', 'ITIDuration']]
     
     # Rename columns for clarity
     dataActionFP = dataActionFP.rename(columns={'blockCondition':'condition'})
     dataActionFP = dataActionFP.rename(columns={'Response.rt':'RT'})
     dataActionFP = dataActionFP.rename(columns={'Response.corr':'Acc'})
+    dataActionFP = dataActionFP.rename(columns={'ITIDuration' : 'ITI'})
     
     # Remove practice trials
     dataActionFP = dataActionFP[(dataActionFP['condition'] != 'practice') & (dataActionFP['condition'].notnull())]
@@ -58,3 +62,6 @@ for iFile,FileName in enumerate(FileList):
     dataActionFPAll=pd.concat([dataActionFPAll, dataActionFP], axis=0)    
 
 dataActionFPAll.to_csv('./Analysis/'+'dataActionFPAll.csv')
+
+# Save to google drive for colab use
+dataActionFPAll.to_csv(gDrivePath +'dataActionFPAll.csv')
